@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>המסר היומי</title>
+    <!-- טעינת React ו-Tailwind מהאינטרנט -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        /* תיקונים קטנים לאנימציות */
+        .perspective-1000 { perspective: 1000px; }
+        .transform-style-3d { transform-style: preserve-3d; }
+        .backface-hidden { backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+    </style>
+</head>
+<body class="bg-gray-900 text-white font-sans overflow-hidden">
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // אייקונים (SVG) פשוטים כדי לא להסתבך עם ספריות חיצוניות
+        const Icons = {
+            Share: () => (
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            ),
+            Info: () => (
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            ),
+            X: () => (
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            )
+        };
+
+        const DailyCardApp = () => {
+            const [currentCard, setCurrentCard] = useState(null);
+            const [isFlipped, setIsFlipped] = useState(false);
+            const [showInfo, setShowInfo] = useState(false);
+
+            // מאגר של 50 מסרים
+            const cardDeck = Array.from({ length: 50 }, (_, i) => ({
+                id: i + 1,
+                type: 'text', 
+                content: `מסר מספר ${i + 1}: ${
+                    [
+                        "היום זה הזמן להתחלה חדשה", "הקשב לאינטואיציה שלך", "שחרר את מה שלא משרת אותך",
+                        "התשובה נמצאת בשקט", "צעד קטן יוביל לשינוי גדול", "הכל קורה בזמן הנכון",
+                        "סמוך על התהליך", "השפע בדרך אליך", "בחר באהבה על פני פחד",
+                        "אתה בדרך הנכונה", "פתח את הלב לאפשרויות חדשות", "הסבלנות משתלמת",
+                        "התמקד בחיובי", "היום הוא מתנה", "הכוח לשנות נמצא בידיך"
+                    ][i % 15]
+                }`,
+                bgColor: [
+                    "from-purple-500 to-indigo-500", "from-pink-500 to-rose-500", 
+                    "from-blue-400 to-cyan-300", "from-emerald-400 to-teal-500",
+                    "from-amber-400 to-orange-500"
+                ][i % 5]
+            }));
+
+            useEffect(() => {
+                const today = new Date();
+                const dateSeed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+                const dailyIndex = dateSeed % 50;
+                
+                setCurrentCard(cardDeck[dailyIndex]);
+
+                const storedDate = localStorage.getItem('lastCardFlipDate');
+                if (storedDate === today.toDateString()) {
+                    setIsFlipped(true);
+                }
+            }, []);
+
+            const handleCardClick = () => {
+                if (!isFlipped) {
+                    setIsFlipped(true);
+                    localStorage.setItem('lastCardFlipDate', new Date().toDateString());
+                }
+            };
+
+            const shareApp = () => {
+                if (navigator.share) {
+                    navigator.share({
+                        title: 'הקלף היומי שלי',
+                        text: currentCard.content,
+                        url: window.location.href,
+                    }).catch(console.error);
+                } else {
+                    alert('המסר הועתק ללוח!');
+                    navigator.clipboard.writeText(`המסר היומי שלי: ${currentCard.content}`);
+                }
+            };
+
+            if (!currentCard) return <div className="flex items-center justify-center h-screen">טוען...</div>;
+
+            return (
+                <div className="min-h-screen bg-gray-900 flex flex-col items-center relative overflow-hidden">
+                    
+                    {/* רקע */}
+                    <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 opacity-20 pointer-events-none">
+                        <div className="absolute top-[-10%] left-[-10%] w-64 h-64 bg-purple-600 rounded-full blur-[100px]"></div>
+                        <div className="absolute bottom-[-10%] right-[-10%] w-80 h-80 bg-blue-600 rounded-full blur-[100px]"></div>
+                    </div>
+
+                    {/* כותרת */}
+                    <header className="z-10 mt-8 mb-4 text-center">
+                        <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-200 to-pink-200 drop-shadow-lg">
+                            המסר היומי
+                        </h1>
+                        <p className="text-gray-400 text-sm mt-1">קלף חדש בכל יום</p>
+                    </header>
+
+                    {/* איזור הקלף */}
+                    <main className="flex-1 flex flex-col items-center justify-center w-full max-w-md px-6 z-10 mb-12 perspective-1000">
+                        <div 
+                            className="relative w-full aspect-[2/3] cursor-pointer group perspective-1000"
+                            onClick={handleCardClick}
+                        >
+                            <div 
+                                className={`w-full h-full transition-all duration-1000 transform-style-3d relative ${isFlipped ? 'rotate-y-180' : ''}`}
+                            >
+                                {/* צד אחורי */}
+                                <div className="absolute inset-0 backface-hidden rounded-2xl shadow-2xl border-2 border-white/10 bg-gradient-to-br from-indigo-900 to-purple-900 flex flex-col items-center justify-center">
+                                    <div className="w-[90%] h-[90%] border border-white/20 rounded-xl flex items-center justify-center bg-white/5 backdrop-blur-sm">
+                                        <div className="text-center p-4">
+                                            <span className="text-6xl mb-4 block">✨</span>
+                                            <p className="text-white/80 font-medium">לחץ כדי לגלות</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* צד קדמי */}
+                                <div className="absolute inset-0 backface-hidden rounded-2xl shadow-2xl overflow-hidden rotate-y-180 bg-white">
+                                    {currentCard.type === 'image' ? (
+                                        <img src={currentCard.content} alt="Card" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <div className={`w-full h-full flex flex-col items-center justify-center p-8 text-center bg-gradient-to-br ${currentCard.bgColor} text-white`}>
+                                            <div className="w-full h-full border-2 border-white/30 rounded-xl flex items-center justify-center p-6 bg-black/10 backdrop-blur-sm">
+                                                <div>
+                                                    <h2 className="text-2xl font-bold mb-4 drop-shadow-md leading-relaxed">{currentCard.content}</h2>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* כפתור שיתוף */}
+                        <div className={`mt-8 transition-opacity duration-500 ${isFlipped ? 'opacity-100' : 'opacity-0'}`}>
+                            <button onClick={(e) => { e.stopPropagation(); shareApp(); }} className="flex items-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full text-white transition-all active:scale-95">
+                                <Icons.Share />
+                                <span>שתף את המסר</span>
+                            </button>
+                        </div>
+                    </main>
+
+                    {/* כפתור מידע */}
+                    <button onClick={() => setShowInfo(true)} className="absolute top-6 left-6 text-white/50 hover:text-white transition-colors z-20">
+                        <Icons.Info />
+                    </button>
+
+                    {/* מודל מידע */}
+                    {showInfo && (
+                        <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                            <div className="bg-gray-800 p-6 rounded-2xl max-w-sm w-full text-white relative border border-white/10 shadow-2xl">
+                                <button onClick={() => setShowInfo(false)} className="absolute top-4 left-4 text-gray-400 hover:text-white">
+                                    <Icons.X />
+                                </button>
+                                <h3 className="text-xl font-bold mb-2">אודות</h3>
+                                <p className="text-gray-300 text-sm leading-relaxed">
+                                    אפליקציה זו בוחרת עבורך קלף מסר אחד מתוך 50 אפשרויות בכל יום. הקלף מתחלף באופן אוטומטי בחצות.
+                                </p>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<DailyCardApp />);
+    </script>
+</body>
+</html>
